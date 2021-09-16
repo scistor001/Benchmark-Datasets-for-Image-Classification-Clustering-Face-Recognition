@@ -19,7 +19,7 @@ def wirte_pic(index, img):
 def parse_video_stream():
     file_obj = request.files['file'].stream.read()
     video_reader = imageio.get_reader(file_obj, 'ffmpeg')
-    fps = video_reader.get_meta_data()['fps']
+    fps = int(video_reader.get_meta_data()['fps'])
     return video_reader, fps
 
 
@@ -27,12 +27,14 @@ def parse_video_stream():
 def action():
     try:
         video_reader, fps = parse_video_stream()
+        predicts = []
         for index, img in enumerate(video_reader):
             classify, confidence = action_classify(img)
-            print("Index: {}, C: {}, C: {}".format(index, classify, confidence))
-        return jsonify((dict(zip(("status", "message"), [0, 'success']))))
+            predicts.append(classify)
+        summary_result = action_classify.summary(predicts, fps)
+        return jsonify(dict(status=0, message="success", result=str(summary_result)))
     except Exception as e:
-        return jsonify((dict(zip(("status", "message"), [1, e]))))
+        return jsonify(dict(status=0, message=e, result=-1))
 
 
 @app.route('/reid/', methods=['post'])
