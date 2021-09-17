@@ -1,32 +1,32 @@
 from flask import Flask, jsonify, request
 import os
 import cv2
-import numpy as np
 import imageio
 from action_interface import ActionClassify
+from reid_interface import ReID
+import torch
 
+# os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 gpu_id = 1
 action_classify = ActionClassify(model_path='./weights/action.pt', gpu_id=gpu_id)
+preson_id = ReID(yolo_model_path="./weights/yolov3.weights", yolo_model_cfg="./weights/yolov3.cfg",
+                 yolo_data_path="./weights/coco.names", reid_model_path="./weights/719rank1.pth")
 
 app = Flask(__name__)
 
-
-def wirte_pic(index, img):
-    cv2.imwrite(os.path.join('/mnt/2t/home/zhengbowen/jobs/web_api/pic', 'test_{}.jpeg'.format(index)), img,
-                [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-
-
 def parse_video_stream():
     file_obj = request.files['file'].stream.read()
+    file_name = request.files['file'].filename
     video_reader = imageio.get_reader(file_obj, 'ffmpeg')
-    fps = int(video_reader.get_meta_data()['fps'])
-    return video_reader, fps
+    fps = video_reader.get_meta_data()['fps']
+    size = video_reader.get_meta_data()['size']
+    return video_reader, fps, size, file_name
 
 
 @app.route('/action/', methods=['post'])
 def action():
     try:
-        video_reader, fps = parse_video_stream()
+        video_reader, fps, size, file_name = parse_video_stream()
         predicts = []
         for index, img in enumerate(video_reader):
             classify, confidence = action_classify(img)
@@ -40,14 +40,25 @@ def action():
 @app.route('/reid/', methods=['post'])
 def reid():
     try:
-        video_reader, fps = parse_video_stream()
+        # debug=False
+        debug = True
+        video_writer = None
+        all_id = []
+        video_reader, fps, size, file_name = parse_video_stream()
+        if debug:
+            os.makedirs('./output', exist_ok=True)
+            new_video_path = "./output/{}".format(file_name)
+            video_writer = cv2.VideoWriter(new_video_path, cv2.VideoWriter_fourcc('M', 'P', 'E', 'G'),
+                                           fps, size)
         for index, img in enumerate(video_reader):
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            wirte_pic(index, img)
-        return jsonify((dict(zip(("status", "message"), [0, 'success']))))
+            with torch.no_grad():
+                all_id = preson_id(img, video_writer, all_id, debug=debug)
+        if debug:
+            video_writer.release()
+        return jsonify(dict(status=0, message="success", result=str(all_id)))
     except Exception as e:
-        return jsonify((dict(zip(("status", "message"), [1, e]))))
+        return jsonify(dict(status=0, message=e, result=-1))
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5001, debug=False)
+    app.run(host='127.0.0.1', port=5000, debug=False)
