@@ -15,7 +15,7 @@ def parse_video_stream():
     file_obj = request.files['file'].stream.read()
     file_name = request.files['file'].filename
     video_reader = imageio.get_reader(file_obj, 'ffmpeg')
-    fps = video_reader.get_meta_data()['fps']
+    fps = int(video_reader.get_meta_data()['fps'])
     size = video_reader.get_meta_data()['size']
     return video_reader, fps, size, file_name
 
