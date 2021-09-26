@@ -73,10 +73,11 @@ class ActionClassify:
                     end = seconds[i - 1]
 
                 if end != -1:
-                    key = '{}_{}'.format(start, end)
+                    if end - start > interval:
+                        key = '{}_{}'.format(start, end)
+                        result[key] = label
                     start = seconds[i]
                     end = -1
-                    result[key] = label
 
             if seconds[-1] - start > interval:
                 key = '{}_{}'.format(start, seconds[-1])
