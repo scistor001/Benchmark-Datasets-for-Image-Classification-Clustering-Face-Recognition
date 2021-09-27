@@ -89,27 +89,13 @@ def load_classes(path):
         names = f.read().split('\n')
     return list(filter(None, names))  # filter removes empty strings (such as last line)
 
-def select_device(force_cpu=False, apex=False):
+def select_device(force_cpu=False):
     # apex if mixed precision training https://github.com/NVIDIA/apex
     cuda = False if force_cpu else torch.cuda.is_available()
     device = torch.device('cuda:0' if cuda else 'cpu')
 
     if not cuda:
         print('Using CPU')
-    if cuda:
-        torch.backends.cudnn.benchmark = True  # set False for reproducible results
-        c = 1024 ** 2  # bytes to MB
-        ng = torch.cuda.device_count()
-        x = [torch.cuda.get_device_properties(i) for i in range(ng)]
-        cuda_str = 'Using CUDA ' + ('Apex ' if apex else '')
-        for i in range(0, ng):
-            if i == 1:
-                # torch.cuda.set_device(0)  # OPTIONAL: Set GPU ID
-                cuda_str = ' ' * len(cuda_str)
-            print("%sdevice%g _CudaDeviceProperties(name='%s', total_memory=%dMB)" %
-                  (cuda_str, i, x[i].name, x[i].total_memory / c))
-
-    print('')  # skip a line
     return device
 
 def letterbox(img, new_shape=416, color=(128, 128, 128)):

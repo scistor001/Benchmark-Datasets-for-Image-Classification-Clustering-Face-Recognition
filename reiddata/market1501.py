@@ -80,7 +80,7 @@ class Market1501(BaseImageDataset):
         """
         # 列表: 含有 n 个图片的路径
         # 'data\\market1501\\query\\0003_c1s6_015971_00.jpg'
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+        img_paths = sorted(glob.glob(osp.join(dir_path, '*.jpg')))
 
         # \d   : 匹配任意数字，等价于 [0-9]
         # [...]: 用来表示一组字符,单独列出：[amk] 匹配 'a'，'m'或'k'

@@ -9,14 +9,13 @@ class ReID:
         self.query_loader, self.data_query = make_data_loader(reidCfg._C)
         self.query_feats = []
         self.reidModel = build_model(reidCfg._C, reid_model_path, self.device)
-        with torch.no_grad():
-            self.model = Darknet(yolo_model_cfg, 416)
-            _ = load_darknet_weights(self.model, yolo_model_path)
-            self.model.to(self.device).eval()
+        self.model = Darknet(yolo_model_cfg, 416)
+        load_darknet_weights(self.model, yolo_model_path)
+        self.model.to(self.device).eval()
         # self.query_feats = make_query(self.query_loader, self.device, self.reidModel, self.query_feats)
         self.classes = load_classes(yolo_data_path)
-        # np.save('./query.npy', self.query_feats.cpu())
-        self.query_feats = torch.from_numpy(np.load('./query.npy')).to('cuda:0')
+        # np.save('./query_0927.npy', self.query_feats.cpu())
+        self.query_feats = torch.from_numpy(np.load('./query_0927.npy')).to(self.device)
         self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
 
     def data_process(self, im0):
@@ -63,9 +62,14 @@ class ReID:
                 distmat_min_value = distmat.min(axis=0)
                 for k in range(n):
                     if distmat_min_value[k] < 1.0:
+                        # print(distmat_min_value)
+                        # print(k)
                         index = int(np.argwhere(distmat[:, k] == distmat_min_value[k])[0])
+                        # print(index)
                         pic_list.append([k, index, distmat_min_value[k]])
+                        # print(self.data_query[index][0])
                         name = self.data_query[index][0].split('/')[-1].split('_')[0]
+                        # print(name)
                         if name not in all_id:
                             all_id.append(name)
                 if debug:

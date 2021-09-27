@@ -5,7 +5,7 @@ from action_interface import ActionClassify
 from reid_interface import ReID
 import cv2
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 ACTIONCLASSIFY = ActionClassify(model_path='./weights/action.pt')
 PERSONREID = ReID(yolo_model_path="./weights/yolov3.weights", yolo_model_cfg="./weights/yolov3.cfg",
                   yolo_data_path="./weights/coco.names", reid_model_path="./weights/719rank1.pth")
@@ -59,6 +59,7 @@ def reid():
         for index, img in enumerate(video_reader):
             if (index + 1) % 10 == 0 and index < frame_num:
                 PERSONREID(img, all_id)
+                # print("frame: {}, pre: {}".format(index, all_id))
         return jsonify(dict(status=0, message="success", result=str(all_id)))
     except Exception as e:
         return jsonify(dict(status=0, message=e, result=-1))
