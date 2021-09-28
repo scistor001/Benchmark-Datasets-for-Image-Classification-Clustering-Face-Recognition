@@ -12,10 +12,12 @@ class ReID:
         self.model = Darknet(yolo_model_cfg, 416)
         load_darknet_weights(self.model, yolo_model_path)
         self.model.to(self.device).eval()
-        # self.query_feats = make_query(self.query_loader, self.device, self.reidModel, self.query_feats)
+        if os.path.exists('./query.npy' ):
+            self.query_feats = torch.from_numpy(np.load('./query.npy')).to(self.device)
+        else:
+            self.query_feats = make_query(self.query_loader, self.device, self.reidModel, self.query_feats)
+            np.save('./query.npy', self.query_feats.cpu())
         self.classes = load_classes(yolo_data_path)
-        # np.save('./query_0927.npy', self.query_feats.cpu())
-        self.query_feats = torch.from_numpy(np.load('./query_0927.npy')).to(self.device)
         self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
 
     def data_process(self, im0):
@@ -61,7 +63,7 @@ class ReID:
                 distmat = distmat.cpu().numpy()  # <class 'tuple'>: (3, 12)
                 distmat_min_value = distmat.min(axis=0)
                 for k in range(n):
-                    if distmat_min_value[k] < 1.0:
+                    if distmat_min_value[k] < 0.8:
                         # print(distmat_min_value)
                         # print(k)
                         index = int(np.argwhere(distmat[:, k] == distmat_min_value[k])[0])
