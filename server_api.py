@@ -40,7 +40,7 @@ def read_lable(label_path):
 @app.route('/action/', methods=['post'])
 def action():
     try:
-        video_reader, fps, size, file_name = parse_video_stream()
+        video_reader, fps, size, file_name , frame_num= parse_video_stream()
         predicts = []
         for index, img in enumerate(video_reader):
             classify, confidence = ACTIONCLASSIFY(img)
@@ -59,7 +59,6 @@ def reid():
         for index, img in enumerate(video_reader):
             if (index + 1) % 10 == 0 and index < frame_num:
                 PERSONREID(img, all_id)
-                # print("frame: {}, pre: {}".format(index, all_id))
         return jsonify(dict(status=0, message="success", result=str(all_id)))
     except Exception as e:
         return jsonify(dict(status=0, message=e, result=-1))
@@ -87,6 +86,7 @@ def reid_pr():
                 if (i + 1) % 10 == 0 and i < total:
                     video_capture.set(cv2.CAP_PROP_POS_FRAMES, i)
                     ret, video_frame = video_capture.read()
+                    video_frame = cv2.cvtColor(video_frame, cv2.COLOR_RGB2BGR)
                     if video_frame is None:
                         continue
                     PERSONREID(video_frame, all_id)
@@ -104,6 +104,7 @@ def reid_pr():
             all_fp = all_fp + fp
             all_true_labels = all_true_labels + len(true_labels)
             all_pre_labels = all_pre_labels + len(pre_labels)
+            video_capture.release()
         p = all_tp / (all_tp + all_fp)
         r = all_tp / all_true_labels
         f1 = (2 * p * r) / ((p + r) if (p + r) else 1)
